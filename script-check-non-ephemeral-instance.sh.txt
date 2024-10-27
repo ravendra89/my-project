@@ -1,0 +1,27 @@
+#!/bin/bash
+ 
+# File to output CSV
+output_file="ec2_instances_with_asg.csv"
+ 
+# Fetch instance details
+instances=$(aws ec2 describe-instances --query 'Reservations[*].Instances[*].[InstanceId,State.Name,Tags[?Key==`Name`].Value | [0]]' --output text)
+ 
+# Fetch ASG details
+asg_instances=$(aws autoscaling describe-auto-scaling-instances --query 'AutoScalingInstances[*].[InstanceId,AutoScalingGroupName]' --output text)
+ 
+# Create an associative array for ASG lookup
+declare -A asg_map
+while read -r instance_id asg_name; do
+    asg_map["$instance_id"]="$asg_name"
+done <<< "$asg_instances"
+ 
+# Write CSV header
+echo "InstanceId,State,Name,AutoScalingGroupName" > "$output_file"
+ 
+# Combine data and write to CSV
+while read -r instance_id state name; do
+    asg_name=${asg_map[$instance_id]:-N/A}
+    echo "$instance_id,$state,\"$name\",$asg_name" >> "$output_file"
+done <<< "$instances"
+ 
+echo "Data exported to $output_file"

@@ -1,0 +1,35 @@
+---
+schemaVersion: "2.2"
+description: "Install Splunk UF on Windows (MSI package)"
+parameters:
+  ip:
+    type: "String"
+    description: "Splunk HF Ip"
+    default: "172.16.3.100"
+  password:
+    type: "String"
+    description: "Splunk UF password"
+    default: "9IEz9kb3RB"
+  s3Bucket:
+    type: "String"
+    description: "Splunk s3 bucket"
+    default: "aptify-devops"
+
+mainSteps:
+  - action: aws:runPowerShellScript
+    name: InstallSplunkUFOnWindowsMSIPackage
+    inputs:
+      runCommand:
+        -  Stop-Service -Name "splunkforwarder"
+        -  $fileName = Get-SSMParameter -Name '/splunk/uf-agent/windows/name' -Region 'ap-southeast-2' | Select-Object -ExpandProperty Value
+        -  $objectKey = "splunk/windows/$fileName"
+        -  $region = "ap-southeast-2"
+        -  $downloadPath = "c:\$fileName"
+        -  Copy-S3Object -BucketName {{ s3Bucket }} -key $objectKey -Region $region -LocalFile $downloadPath
+        -  msiexec.exe /i "$downloadPath" AGREETOLICENSE=yes DEPLOYMENT_SERVER={{ ip }}:8089 LAUNCHSPLUNK=1 SERVICESTARTTYPE=auto SPLUNKUSERNAME=admin SPLUNKPASSWORD={{ password }} /quiet
+        -  Write-Output "Splunk UF installed"
+        -  Start-Service -Name "splunkforwarder"
+        -  Get-Service -Name "splunkforwarder"
+
+
+        # Powershell script does not accept ''   so always use ""

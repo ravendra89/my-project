@@ -1,0 +1,71 @@
+1) After cloning, navigate to the repository directory:
+
+cd repository-name
+2) List all branches to find your custom branch:
+
+git branch -a
+
+3) Switch to your custom branch:
+git checkout branch-name
+
+4) Verify: Check that you are on the correct branch:
+
+git branch
+
+5) tfswitch  to switch the terraform version
+
+6) echo "" > credentials(filename) to empty the file
+
+7) What git add -p 
+Interactive Staging: git add -p stands for "patch" and allows you to stage changes in a piecemeal fashion. Instead of adding all changes in a file or all files at once, it breaks the changes into smaller, manageable "hunks" or sections.
+
+Review Changes: You get a chance to review each hunk of changes individually. Git will present each hunk and prompt you with options to decide whether to stage it or not.
+
+Selective Staging: This command helps you selectively choose which parts of the changes you want to include in the next commit. This is useful for breaking down a large set of changes into multiple commits, improving commit granularity and clarity.
+@ we can use instead of git add .
+
+8) git fetch
+To See Remote Changes: Use git fetch to see what changes are available on the remote repository before deciding how to integrate them. For example:
+
+git fetch origin
+This command fetches updates from the origin remote but does not modify your current branch.
+
+we can check remote repository code change status
+
+To Review Changes: After fetching, you can review what changes have been made in the remote branches by using commands like git log or git diff. For example:
+
+git log HEAD..origin/main
+This shows commits on origin/main that are not in your current branch.
+
+To Merge or Rebase: Once you’ve reviewed the changes, you can merge or rebase them into your current branch as needed. For example:
+
+git merge origin/main
+This merges the changes from origin/main into your current branch.
+
+Summary
+In essence, git fetch is a safe way to get updates from a remote repository without affecting your local work. It’s useful for keeping your local repository up-to-date and reviewing changes before integrating them into your current branch.
+
+
+9) git pull --rebase origin branchname
+
+The command git pull --rebase origin branchname is used to update your local branch with changes from a remote repository while applying your local commits on top of the updated remote commits. Here’s a breakdown of what each part does:
+
+So, when you run git pull --rebase origin branchname, Git will:
+
+Fetch the latest changes from branchname in the origin remote.
+Rebase your local commits on top of these fetched changes, ensuring that your commits appear as if they were made after the latest remote commits.
+Using rebase instead of merge can help maintain a more linear project history, which can make it easier to understand the project’s commit history. However, it’s important to use rebase carefully, especially when working on shared branches, as rebasing can rewrite commit history.
+
+
+10) git checkout -b newbaranchname  to create & checkout to new branch
+
+# git rebase means synks sub branch to master branch
+# best practics commands-
+git fetch
+git checkout master
+git pull origin master
+git rebase master
+
+# sub branch ko merge karne ke bad git fetch command run karna h to remote code local me aa jayega 
+then we can delete sub branch
+

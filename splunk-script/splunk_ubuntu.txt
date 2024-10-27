@@ -1,0 +1,71 @@
+schemaVersion: "2.2"
+description: "Install or Upgrade Splunk UF on Linux (DEB package)"
+parameters:
+  ip:
+    type: "String"
+    description: "Splunk HF IP"
+    default: "172.16.4.106"
+  password:
+    type: "String"
+    description: "Splunk UF password"
+    default: "6IEz8kb3RZ"
+  s3Bucket:
+    type: "String"
+    description: "Splunk S3 bucket"
+    default: "cb-devops-installers"
+mainSteps:
+  - action: aws:runShellScript
+    name: InstallOrUpgradeSplunkUFOnLinuxDEBPackage
+    precondition:
+      StringEquals:
+        - platformType
+        - Linux
+    inputs:
+      runCommand:
+        - |
+          #!/bin/bash
+          
+          # Switch to root user
+          sudo su
+
+          # Define S3 bucket path to download splunk file
+          FILE_NAME=$(aws ssm get-parameter --name "/splunk/uf-agent/ubuntu/name" --region "us-east-1" --query "Parameter.Value" --output text)
+          OBJECT_KEY="splunk/ubuntu/$FILE_NAME"
+          DOWNLOAD_PATH="/tmp/$FILE_NAME"
+          
+          # Check if Splunk is installed
+          if [ -d "/opt/splunkforwarder" ]; then
+            echo "Splunk is already installed. Upgrading..."
+            sudo systemctl stop SplunkForwarder
+            sleep 120
+            sudo rm /etc/systemd/system/SplunkForwarder.service
+            # Download and install the package
+            aws s3 cp s3://{{ s3Bucket }}/$OBJECT_KEY $DOWNLOAD_PATH
+            sudo dpkg -i $DOWNLOAD_PATH
+          else
+            echo "Splunk is not installed. Installing..."
+            # Download and install the package
+            aws s3 cp s3://{{ s3Bucket }}/$OBJECT_KEY $DOWNLOAD_PATH
+            sudo dpkg -i $DOWNLOAD_PATH
+            # Set up Splunk configuration
+            echo "[user_info]" | sudo tee -a /opt/splunkforwarder/etc/system/local/user-seed.conf
+            echo "USERNAME = admin" | sudo tee -a /opt/splunkforwarder/etc/system/local/user-seed.conf
+            echo "PASSWORD = {{ password }}" | sudo tee -a /opt/splunkforwarder/etc/system/local/user-seed.conf
+          fi
+
+          sudo /opt/splunkforwarder/bin/splunk enable boot-start -user root --accept-license --answer-yes --no-prompt
+          
+          # <ip> : Splunk HF private IP
+          # <password> : Change the password for each product. Store password in Lastpass
+          sudo /opt/splunkforwarder/bin/splunk set deploy-poll {{ ip }}:8089 -auth admin:{{ password }}
+          
+          # Ensure correct permissions
+          sudo chown -R splunkfwd:splunkfwd /opt/splunkforwarder/
+          
+          # Install or update Splunk service
+          aws s3 cp s3://{{ s3Bucket }}/splunk/ubuntu/SplunkForwarder.service /etc/systemd/system/SplunkForwarder.service
+          
+          # Reload and start Splunk systemd
+          sudo systemctl daemon-reload
+          sudo systemctl start SplunkForwarder
+          sudo systemctl enable SplunkForwarder

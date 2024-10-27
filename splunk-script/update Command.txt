@@ -1,0 +1,8 @@
+sudo apt upgrade - to update the package
+sudo apt list --upgradable - to check the pending update
+
+
+
+
+
+
